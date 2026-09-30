@@ -29,3 +29,10 @@ def get_device(name: str):
     if device is None:
         raise HTTPException(status_code=404, detail="No device called " + name)
     return device
+
+@app.post("/devices", status_code=201)
+def create_device(device: Device):
+    new_device = device.model_dump()
+    devices.insert_one(new_device)
+    new_device.pop("_id")
+    return new_device
