@@ -21,7 +21,7 @@ class Device(BaseModel):
 
 @app.get("/devices")
 def get_devices():
-    return devices.find({},{"_id": 0})
+    return list(devices.find({},{"_id": 0}))
 
 @app.get("/devices/{name}")
 def get_device(name: str):
@@ -36,3 +36,13 @@ def create_device(device: Device):
     devices.insert_one(new_device)
     new_device.pop("_id")
     return new_device
+
+@app.put("/devices/{name}")
+def put_device(name: str, device: Device):
+    updated_device = device.model_dump()
+    result = devices.update_one({"name" : name}, {"$set" : updated_device})
+    if result is None:
+        raise HTTPException(status_code=404, detail=("device called " + name + " does not exist"))
+    return updated_device
+
+
