@@ -41,8 +41,15 @@ def create_device(device: Device):
 def put_device(name: str, device: Device):
     updated_device = device.model_dump()
     result = devices.update_one({"name" : name}, {"$set" : updated_device})
-    if result is None:
+    if result.matched_count == 0:
         raise HTTPException(status_code=404, detail=("device called " + name + " does not exist"))
     return updated_device
+
+@app.delete("/devices/{name}")
+def delete_device(name : str):
+    result = devices.delete_one({"name" : name})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail=("device called " + name + " does not exist"))
+    return {"message" : name + " deleted successfully"}
 
 
