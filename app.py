@@ -37,12 +37,13 @@ def create_device(device: Device):
     new_device.pop("_id")
     return new_device
 
-@app.put("/devices/{name}")
+@app.put("/devices/{name}", status_code=201)
 def put_device(name: str, device: Device):
     updated_device = device.model_dump()
     result = devices.update_one({"name" : name}, {"$set" : updated_device})
     if result.matched_count == 0:
-        raise HTTPException(status_code=404, detail=("device called " + name + " does not exist"))
+        devices.insert_one(updated_device)
+        updated_device.pop("_id")
     return updated_device
 
 @app.delete("/devices/{name}")
