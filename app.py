@@ -1,7 +1,7 @@
 import os
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Response
 from pydantic import BaseModel
 from pymongo import MongoClient
 
@@ -37,13 +37,15 @@ def create_device(device: Device):
     new_device.pop("_id")
     return new_device
 
-@app.put("/devices/{name}", status_code=201)
-def put_device(name: str, device: Device):
+@app.put("/devices/{name}")
+def put_device(name: str, device: Device, response: Response):
     updated_device = device.model_dump()
     result = devices.update_one({"name" : name}, {"$set" : updated_device})
     if result.matched_count == 0:
         devices.insert_one(updated_device)
         updated_device.pop("_id")
+        response.status_code = 201
+        return updated_device
     return updated_device
 
 @app.delete("/devices/{name}")
