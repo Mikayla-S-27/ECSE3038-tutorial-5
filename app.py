@@ -32,6 +32,8 @@ def get_device(name: str):
 
 @app.post("/devices", status_code=201)
 def create_device(device: Device):
+    if devices.find_one({"name": device.name}) is not None:
+        raise HTTPException(status_code=409, detail="Device " + device.name + " already exists")
     new_device = device.model_dump()
     devices.insert_one(new_device)
     new_device.pop("_id")
@@ -39,20 +41,19 @@ def create_device(device: Device):
 
 @app.put("/devices/{name}")
 def put_device(name: str, device: Device, response: Response):
-    updated_device = device.model_dump()
-    result = devices.update_one({"name" : name}, {"$set" : updated_device})
-    if result.matched_count == 0:
-        devices.insert_one(updated_device)
-        updated_device.pop("_id")
+    if device.name != name:
+        raise HTTPException(status_code=400, detail="Body name must match URL name")
+    new_device = device.model_dump()
+    result = devices.replace_one({"name": name}, new_device, upsert=True)
+    if result.upserted_id is not None:
         response.status_code = 201
-        return updated_device
-    return updated_device
+    return new_device
 
-@app.delete("/devices/{name}")
+@app.delete("/devices/{name}", status_code = 204)
 def delete_device(name : str):
     result = devices.delete_one({"name" : name})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail=("device called " + name + " does not exist"))
-    return {"message" : name + " deleted successfully"}
+    return Response(status_code=204)
 
 
